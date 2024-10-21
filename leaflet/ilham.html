@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>elham's map</title>
+    
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="autres.geojson"></script>
+    <script src="Ecoles.geojson"></script>
+    <script src="StationsTramway.geojson"></script>
+    <script src="lignestramway.geojson"></script>
+
+    <!--  le lien vers Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-k6RqeWeci5ZR/Lv4MR0sA0FfDOMaD3gI6D0fN6zqlK5q8aB6KxoyF7Udx+QF5E8" crossorigin="anonymous">
+
+    <!--  les liens vers Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        .leaflet-container {
+            height: 100vh;
+            width: 100%;
+        }
+        .custom-control {
+            background: white;
+            padding: 5px;
+            border-radius: 5px;
+            box-shadow: 0 1px 10px rgba(0,0,0,0.5);
+        }
+        .custom-control .leaflet-control-layers {
+            display: flex;
+            align-items: center;
+        }
+        .custom-control .leaflet-control-layers-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .custom-control .leaflet-control-layers-toggle .fa-layer-group {
+            font-size: 20px;
+        }
+        .feedback-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        .legend {
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        position: absolute;
+        bottom: 30px;
+        left: 100px; /* Ajuster pour laisser de la place pour le carrousel */
+        z-index: 1000;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+        .legend div {
+            margin-bottom: 5px;
+        }
+        #sponsorCarousel {
+        position: absolute; /* Positionnement absolu */
+        bottom: 70px; /* Distance du bas */
+        left: 10px; /* Distance de gauche */
+        width: 100px; /* Largeur du carrousel */
+        height: 40px; /* Hauteur automatique */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Ombre pour un effet visuel */
+        overflow: hidden; /* Masquer le débordement */
+        border-radius: 5px; /* Coins arrondis */
+        background: white; /* Fond blanc */
+    }
+
+    .carousel-inner img {
+        width: 100%; /* S'assurer que l'image s'adapte à la largeur du carrousel */
+        height: auto; /* Hauteur automatique */
+    }
+        
+    </style>
+</head>
+<body>
+
+<div id="map" class="leaflet-container"></div>
+<!-- Carrousel des Sponsors -->
+<div id="sponsorCarousel" class="carousel slide" data-ride="carousel" data-interval="3000">
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <img src="images/images.png" class="d-block w-100" alt="Sponsor 1">
+        </div>
+        <div class="carousel-item">
+            <img src="images/alirffan.png" class="d-block w-100" alt="Sponsor 2">
+        </div>
+        <div class="carousel-item">
+            <img src="images/tramway.png" class="d-block w-100" alt="Sponsor 3">
+        </div>
+    </div>
+    <a class="carousel-control-prev" href="#sponsorCarousel" role="button" data-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="sr-only">Précédent</span>
+    </a>
+    <a class="carousel-control-next" href="#sponsorCarousel" role="button" data-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="sr-only">Suivant</span>
+    </a>
+</div>
+
+<!-- Fenêtre modale de bienvenue -->
+<div class="modal fade" id="welcomeModal" tabindex="-1" role="dialog" aria-labelledby="welcomeModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="welcomeModalLabel">Bienvenue sur Ma première carte web :)</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Cette carte interactive vous permet de visualiser les écoles de Madinat Al Irfane et les stations de tramway de Rabat. Utilisez le bouton en haut à droite pour activer ou désactiver les différentes couches et le bouton bleu en bas pour partager votre avis ☺️.</p>
+                <p>Le but de cette carte est de faciliter votre navigation dans la région, de vous aider à localiser les universités, et de planifier vos trajets en tramway. Explorez et découvrez !</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fenêtre modale de feedback -->
+<div class="modal fade" id="feedbackModal" tabindex="-1" role="dialog" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="feedbackModalLabel">Donnez votre avis</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="feedbackForm">
+                    <div class="form-group">
+                        <label for="feedbackText">Votre avis :</label>
+                        <textarea class="form-control" id="feedbackText" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail">Votre email (facultatif) :</label>
+                        <input type="email" class="form-control" id="userEmail" placeholder="example@domaine.com">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="submitFeedback()">Envoyer</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bouton de feedback -->
+<button class="feedback-btn" onclick="$('#feedbackModal').modal('show')">Donner votre avis</button>
+
+<!-- Légende -->
+<div class="legend" id="legend">
+    <h4>Universités</h4>
+    <div id="schoolLegend"></div>
+    <h5>Lignes de Tramway</h5>
+    <div id="lineLegend"></div>
+</div>
+<!-- Carrousel des Sponsors -->
+<div id="sponsorCarousel" class="carousel slide" data-ride="carousel" style="position: fixed; bottom: 10px; right: 10px; width: 40px; z-index: 2000;">
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <img src="images/images.png" class="d-block w-100" alt="Sponsor 1" style="max-height: 50px; object-fit: contain;">
+        </div>
+        <div class="carousel-item">
+            <img src="images/alirffan.png" class="d-block w-100" alt="Sponsor 2" style="max-height: 50px; object-fit: contain;">
+        </div>
+        <div class="carousel-item">
+            <img src="images/tramway.png" class="d-block w-100" alt="Sponsor 3" style="max-height: 50px; object-fit: contain;">
+        </div>
+    </div>
+    <a class="carousel-control-prev" href="#sponsorCarousel" role="button" data-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="sr-only">Précédent</span>
+    </a>
+    <a class="carousel-control-next" href="#sponsorCarousel" role="button" data-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="sr-only">Suivant</span>
+    </a>
+</div>
+<script>
+    // Initialisation de la carte
+    const map = L.map('map').setView([33.982838, -6.864644], 13);
+
+    // Ajout des tuiles OpenStreetMap les basemaps....
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    const osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'
+    });
+    const selectedSchoolColor = 'yellow'; // Couleur de sélection pour les écoles
+    const selectedLineColor = 'yellow'; // Couleur de sélection pour les lignes de tramway
+
+    // Marqueurs pour le contrôle des couches
+    const marker = L.marker([33.981924, -6.865251]).addTo(map)
+        .bindPopup('<b>Welcome to,</b><br />  Madinat Al Irfane<br />The academic heart of Rabat.').openPopup();
+
+    // Fonction pour générer une couleur aléatoire(catégorisation de couches c aleatoire)
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
+    // Couche des écoles
+    const schoolColors = {};
+    const ecolesLayer = L.geoJSON(ecoles, {
+        style: function (feature) {
+            const color = getRandomColor();
+            schoolColors[feature.properties.Nom] = color; // Stocke la couleur pour la légende
+            return {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.5,
+                weight: 2
+            };
+        },
+        onEachFeature: function (feature, layer) {
+            const popupContent = `
+                <b>École :</b> ${feature.properties.Nom} <br />
+            `;
+            layer.bindPopup(popupContent);
+            layer.on('click', function () {
+                // Change la couleur lors du clic
+                layer.setStyle({
+                    color: selectedSchoolColor,
+                    fillColor: selectedSchoolColor,
+                    fillOpacity: 0.7
+                });
+
+                // Réinitialiser les autres écoles à leur couleur d'origine
+                ecolesLayer.eachLayer(function (l) {
+                    if (l !== layer) {
+                        l.setStyle({
+                            color: schoolColors[l.feature.properties.Nom],
+                            fillColor: schoolColors[l.feature.properties.Nom],
+                            fillOpacity: 0.5
+                        });
+                    }
+                });
+            });
+        }
+    }).addTo(map);
+
+    // Met à jour la légende des écoles
+    const schoolLegend = document.getElementById('schoolLegend');
+    for (const [name, color] of Object.entries(schoolColors)) {
+        schoolLegend.innerHTML += `<div><span style="background-color: ${color}; width: 20px; height: 20px; display: inline-block;"></span> ${name}</div>`;
+    }
+
+    // icone de tramwy
+    const stationIcon = L.icon({
+        iconUrl: 'images/tram.png', 
+        iconSize: [14, 14], // Taille de l'icône
+        iconAnchor: [12, 41], // Point d'ancrage de l'icône
+        popupAnchor: [1, -34] // Position du popup
+    });
+
+    // Couche des stations
+    const stationsLayer = L.geoJSON(stations, {
+        pointToLayer: function (feature, latlng) {
+            return L.marker(latlng, {icon: stationIcon}).bindPopup("<b>Station :</b> " + feature.properties.Nom);
+        }
+    });
+
+    // Couche des lignes de tramway
+    const lignesLayer = L.geoJSON(lignes, {
+        style: function (feature) {
+            const color = feature.properties.nom === "L1" ? "blue" : "red"; // Changez les couleurs selon vos besoins
+            return { color: color, weight: 3 };
+        },
+        onEachFeature: function (feature, layer) {
+            const lineName = feature.properties.nom;
+            layer.bindPopup(`<b>Ligne :</b> ${lineName}`);
+
+            layer.on('click', function () {
+                // Change la couleur lors du clic
+                layer.setStyle({
+                    color: selectedLineColor,
+                    weight: 5 // Épaissir la ligne pour la sélection
+                });
+
+                // Réinitialiser les autres lignes à leur couleur d'origine
+                lignesLayer.eachLayer(function (l) {
+                    if (l !== layer) {
+                        l.setStyle({
+                            color: l.feature.properties.nom === "L1" ? "blue" : "red",
+                            weight: 3
+                        });
+                    }
+                });
+            });
+        }
+    }).addTo(map);
+    // Création de groupes de couches
+    const overlayMaps = {
+        "Écoles": ecolesLayer,
+        "Stations de Tramway": stationsLayer,
+        "Lignes de Tramway": lignesLayer
+    };
+
+    // Contrôle des couches
+    const layerControl = L.control.layers({
+        "OpenStreetMap": osm,
+        "<span style='color: red'>OpenStreetMap.HOT</span>": osmHOT
+    }, overlayMaps, { collapsed: false }).addTo(map);
+
+    // Modifier l'apparence du bouton de contrôle des couches
+    const controlContainer = layerControl.getContainer();
+    controlContainer.classList.add('custom-control');
+
+    // Ajouter une icône de couche (layer) avec Font Awesome
+    const toggleButton = controlContainer.querySelector('.leaflet-control-layers-toggle');
+    toggleButton.innerHTML = '<i class="fas fa-layer-group"></i>'; // Ajoutez l'icône
+
+    // Afficher la modale de bienvenue
+    $(document).ready(function(){
+        $('#welcomeModal').modal('show'); // Affiche la modale au chargement
+    });
+
+    // Fonction pour envoyer le feedback
+    function submitFeedback() {
+        const feedbackText = $('#feedbackText').val();
+        const userEmail = $('#userEmail').val();
+
+        if (feedbackText.trim() === '') {
+            alert("Veuillez entrer votre avis avant de soumettre.");
+            return;
+        }
+
+        // Afficher le message de succès et fermer la modale
+        alert("Merci pour votre avis !");
+        $('#feedbackModal').modal('hide');
+        $('#feedbackForm')[0].reset(); // Réinitialiser le formulaire
+    }
+</script>
+
+</body>
+</html>
+
+
